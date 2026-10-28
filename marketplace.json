@@ -1,0 +1,12 @@
+{
+  "name": "local-auto-resume",
+  "description": "Local ZCode task recovery plugin",
+  "plugins": [
+    {
+      "name": "zcode-auto-resume",
+      "source": ".",
+      "description": "Monitor recently active sessions and retry interrupted tasks",
+      "version": "0.1.16"
+    }
+  ]
+}

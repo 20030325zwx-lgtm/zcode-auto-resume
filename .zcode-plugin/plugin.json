@@ -1,0 +1,5 @@
+{
+  "name": "zcode-auto-resume",
+  "version": "0.1.16",
+  "description": "Monitor recently active ZCode sessions and retry interrupted tasks."
+}
