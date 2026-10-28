@@ -4,9 +4,13 @@
   "plugins": [
     {
       "name": "zcode-auto-resume",
-      "source": ".",
+      "displayName": "Auto Resume",
+      "displayName_i18n": { "zh-CN": "自动续跑" },
+      "componentTypes": ["ui", "mcp", "hook"],
+      "category": "utilities",
+      "source": "./plugin",
       "description": "Monitor recently active sessions and retry interrupted tasks",
-      "version": "0.1.16"
+      "version": "0.2.0"
     }
   ]
 }

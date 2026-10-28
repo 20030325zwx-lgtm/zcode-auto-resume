@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自动续跑</title>
+  <style>
+    :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; --bg:#f8f9fa; --card:#fff; --text:#26312e; --muted:#738079; --line:#e2e7e4; --accent:#16765c; --soft:#eaf4ef; --error:#b3483b; }
+    @media(prefers-color-scheme:dark) { :root:not([data-theme="light"]) { --bg:#161817; --card:#1f2220; --text:#e3e8e5; --muted:#9ca8a0; --line:#343b36; --accent:#82c8ab; --soft:#263d32; --error:#f1a195; } }
+    :root[data-theme="dark"] { color-scheme:dark; --bg:#161817; --card:#1f2220; --text:#e3e8e5; --muted:#9ca8a0; --line:#343b36; --accent:#82c8ab; --soft:#263d32; --error:#f1a195; }
+    :root[data-theme="light"] { color-scheme:light; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-size:13px; line-height:1.6; }
+    main { max-width:640px; margin:0 auto; padding:20px 16px; }
+    header,.status-line,.row-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    h1 { font-size:17px; margin:0; font-weight:650; }
+    h2 { font-size:13px; margin:0; font-weight:600; }
+    p { margin:0; }
+    .muted,time,.meta { color:var(--muted); font-size:12px; }
+    .card { margin-top:16px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+    .status { font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px; }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--muted); }
+    .dot.active { background:var(--accent); box-shadow:0 0 0 3px var(--soft); }
+    button { font:inherit; cursor:pointer; border:1px solid var(--line); border-radius:7px; padding:7px 12px; background:var(--card); color:var(--text); }
+    button.primary { background:var(--accent); color:var(--bg); border-color:transparent; font-weight:600; }
+    button:disabled { opacity:.5; cursor:default; }
+    button:focus-visible,summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+    .refresh { border:0; padding:3px 0; color:var(--muted); background:none; }
+    .meta { margin-top:12px; }
+    .numbers { display:flex; gap:18px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+    .numbers b { color:var(--text); font-size:15px; margin-right:4px; }
+    #alert { margin-top:12px; color:var(--error); overflow-wrap:anywhere; }
+    section { margin-top:24px; }
+    .row { padding:12px 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+    .row:last-child { border:0; }
+    .row-title { font-weight:500; min-width:0; }
+    .badge { color:var(--accent); white-space:nowrap; font-size:11px; }
+    .badge.failed { color:var(--error); }
+    .row p { font-size:12px; color:var(--muted); margin-top:3px; }
+    .row time { display:block; margin-top:3px; font-size:11px; }
+    .empty { color:var(--muted); padding:14px 0; font-size:12px; }
+    details { margin-top:18px; border-top:1px solid var(--line); padding-top:14px; }
+    summary { cursor:pointer; color:var(--muted); font-size:12px; }
+    .rules { margin-top:20px; color:var(--muted); font-size:11px; }
+    [hidden] { display:none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><h1>自动续跑</h1><button class="refresh" id="refresh">刷新</button></header>
+    <div class="card">
+      <div class="status-line"><div class="status"><span class="dot" id="dot"></span><span id="status" role="status">连接中</span></div><button class="primary" id="toggle" disabled>开始检测</button></div>
+      <p class="meta" id="checked">正在连接监控服务…</p>
+      <div class="numbers"><span><b id="count">—</b>个会话</span><span><b id="attempts">—</b>次今日尝试</span></div>
+      <p id="alert" role="alert" hidden></p>
+    </div>
+    <section><h2>最近续跑</h2><div id="events"><p class="empty">暂无记录</p></div></section>
+    <details id="sessions-details"><summary>查看本轮会话</summary><div id="sessions"></div></details>
+    <details><summary>查看巡检历史</summary><div id="checks"></div></details>
+    <p class="rules">每 2 分钟检查最近 20 分钟活跃的会话 · 每个会话每天最多尝试 100 次<br>此开关控制所有会话。停止时，正在提交的指令会先处理完。</p>
+  </main>
+  <script type="module">var n=t=>document.getElementById(t),_={normal:"\u6B63\u5E38",running:"\u8FD0\u884C\u4E2D",recent:"\u6700\u8FD1\u6D3B\u8DC3",index_completed:"\u7D22\u5F15\u5DF2\u5B8C\u6210",waiting:"\u7B49\u5F85",skipped:"\u8DF3\u8FC7",ready:"\u5F85\u7EED\u8DD1",sent:"\u5DF2\u786E\u8BA4\u9001\u8FBE",failed:"\u53D1\u9001\u5931\u8D25",handled:"\u5DF2\u5904\u7406",cooldown:"\u51B7\u5374\u4E2D",limit:"\u8FBE\u4E0A\u9650"},x=t=>t?new Date(t*1e3).toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1}):"\u5C1A\u672A\u68C0\u67E5",d,i=!1,g=!1;function p(t){n("alert").textContent=t||"",n("alert").hidden=!t}function h(t,o,e,c,a=!1){let s=document.createElement("div");s.className="row";let l=document.createElement("div");l.className="row-head";let m=document.createElement("span");if(m.className="row-title",m.textContent=t,l.append(m),c){let r=document.createElement("span");r.className=`badge${a?" failed":""}`,r.textContent=c,l.append(r)}if(s.append(l),o){let r=document.createElement("p");r.textContent=o,s.append(r)}if(e){let r=document.createElement("time");r.textContent=x(e),s.append(r)}return s}function f(t,o,e,c){let a=n(t);if(a.replaceChildren(),o.length)o.forEach(s=>a.append(e(s)));else{let s=document.createElement("p");s.className="empty",s.textContent=c,a.append(s)}}function C(t){d=t;let o=t.monitoring&&t.checked_at&&Date.now()/1e3-t.checked_at>(t.interval_seconds||120)*2+30;n("status").textContent=t.monitoring?o?"\u5DE1\u68C0\u5DF2\u5EF6\u8FDF":"\u68C0\u6D4B\u4E2D":"\u5DF2\u505C\u6B62",n("dot").className=`dot${t.monitoring?" active":""}`,n("toggle").textContent=t.monitoring?"\u505C\u6B62\u68C0\u6D4B":"\u5F00\u59CB\u68C0\u6D4B",n("toggle").className=t.monitoring?"":"primary",n("toggle").disabled=i,n("checked").textContent=`\u4E0A\u6B21\u68C0\u67E5 \xB7 ${x(t.checked_at)}`,n("count").textContent=(t.sessions||[]).length,n("attempts").textContent=t.attempts_today_total||0,p(t.error),f("events",(t.events||[]).slice(0,3),e=>h(e.title,e.detail,e.at,e.type==="sent"?"\u5DF2\u786E\u8BA4\u9001\u8FBE":"\u53D1\u9001\u5931\u8D25",e.type!=="sent"),"\u8FD8\u6CA1\u6709\u7EED\u8DD1\u8BB0\u5F55"),f("sessions",t.sessions||[],e=>h(e.title,`${e.reason} \xB7 \u4ECA\u65E5 ${e.attempts_today||0} \u6B21`,null,_[e.decision]||e.decision,e.decision==="failed"),"\u6700\u8FD1 20 \u5206\u949F\u6CA1\u6709\u9700\u8981\u68C0\u67E5\u7684\u4F1A\u8BDD"),f("checks",(t.checks||[]).slice(0,10),e=>h(`\u68C0\u67E5 ${e.scanned} \u4E2A\u4F1A\u8BDD \xB7 \u9001\u8FBE ${e.resumed} \u4E2A`,"",e.at),"\u8FD8\u6CA1\u6709\u5DE1\u68C0\u8BB0\u5F55")}async function w(t,o){let e=await fetch(t==="status"?"/api/status":o?"/api/start":"/api/stop",{method:t==="status"?"GET":"POST",headers:t==="status"?{}:{"X-ZCode-Control":"1"},cache:"no-store"});if(!e.ok)throw new Error(`\u76D1\u63A7\u670D\u52A1\u8FD4\u56DE HTTP ${e.status}`);return e.json()}async function u(){if(!(g||i)){g=!0;try{C(await w("status"))}catch(t){n("status").textContent="\u8FDE\u63A5\u5931\u8D25",n("dot").className="dot",n("toggle").disabled=!0,p(t.message)}finally{g=!1}}}n("toggle").addEventListener("click",async()=>{if(!(!d||i)){i=!0,n("toggle").disabled=!0;try{let t=await w("control",!d.monitoring);C({...d,monitoring:t.monitoring,error:null})}catch(t){p(t.message)}finally{i=!1,n("toggle").disabled=!1,await u()}}});n("refresh").addEventListener("click",u);async function y(){await u(),setInterval(u,5e3)}y().catch(t=>{n("status").textContent="\u8FDE\u63A5\u5931\u8D25",p(t.message)});
+</script>
+</body>
+</html>

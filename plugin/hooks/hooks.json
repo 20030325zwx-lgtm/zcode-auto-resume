@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "python3",
+            "args": ["${ZCODE_PLUGIN_ROOT}/monitor.py", "start"],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ]
+  }
+}

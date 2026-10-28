@@ -1,0 +1,24 @@
+{
+  "name": "zcode-auto-resume",
+  "version": "0.2.0",
+  "description": "Monitor recently active ZCode sessions and retry interrupted tasks.",
+  "mcpServers": {
+    "monitor": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs"]
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "monitor",
+        "title": { "zh-CN": "自动续跑", "en-US": "Auto Resume" },
+        "icon": "activity",
+        "server": "monitor",
+        "resourceUri": "ui://zcode-auto-resume/panel.html",
+        "availability": "session"
+      }
+    ]
+  }
+}
